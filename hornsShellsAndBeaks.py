@@ -1,0 +1,124 @@
+# An implementation of:
+''' Stępień, C. (2009). An IFS-based method for modelling horns, seashells and other natural forms.
+Computers & Graphics, 33(4), 576-581'''
+
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
+import matplotlib.pyplot as plt
+from matplotlib import animation
+from scipy.spatial.transform import Rotation as R
+
+# Transformation parameters
+organismChoice = 'GreaterKudu'
+parameterChoices = {
+    'GreaterKudu': {'alpha': 7, 'beta': 7, 'gamma': 0, 'zScale': .96, 'parameters': 48},
+    'WildGoat': {'alpha': 2, 'beta': 16, 'gamma': 0, 'zScale': .85, 'parameters': 8},
+    'WaterBuffalo': {'alpha': .8, 'beta': 1.5, 'gamma': 0, 'zScale': .98, 'parameters': 80},
+    'Markhor': {'alpha': 9, 'beta': 9, 'gamma': 0, 'zScale': .98, 'parameters': 90},
+    'StrombusGigas': {'alpha': 0, 'beta': 40, 'gamma': 0, 'zScale': .93, 'parameters': 48},
+    'ChiroceusRamosus': {'alpha': 0, 'beta': 80, 'gamma': 0, 'zScale': .85, 'parameters': 25},
+    'LongBeak': {'alpha': 0, 'beta': 2, 'gamma': 0, 'zScale': .8, 'parameters': 18},
+    'ShortBeak': {'alpha': 0, 'beta': 7.5, 'gamma': 0, 'zScale': .8, 'parameters': 18}}
+alpha, beta, gamma, zScale, iterations = list(parameterChoices[organismChoice].values())
+
+
+# -------------------------------------------
+# Cube parameters
+# -------------------------------------------
+cubeCoordinates = [ \
+    [0, 0, 0], # near bottom left
+    [1, 0, 0], # near bottom right
+    [1, 1, 0], # far bottom right
+    [0, 1, 0], # far bottom left
+    [0, 0, 1], # near top left
+    [1, 0, 1], # near top right
+    [1, 1, 1], # far top right
+    [0, 1, 1]] # far top left
+
+def getCubeVerts(coords):
+    return \
+        [[coords[0], coords[1], coords[2], coords[3]], 
+        [coords[4], coords[5], coords[6], coords[7]], 
+        [coords[0], coords[1], coords[5], coords[4]], 
+        [coords[2], coords[3], coords[7], coords[6]], 
+        [coords[1], coords[2], coords[6], coords[5]],
+        [coords[4], coords[7], coords[3], coords[0]]]
+
+
+# -------------------------------------------
+# Transformation functions
+# -------------------------------------------
+
+def scale(vector, zScale):
+    scaleMatrix = [[1,0,0], [0,1,0], [0,0,zScale]]
+    return np.matmul(vector, scaleMatrix) 
+
+def rotate(vector, alpha, beta, gamma):
+    r = R.from_euler('zxz', [alpha, beta, gamma], degrees=True)
+    return r.apply(vector)
+
+def translate(priorShape, currentShape):
+    diff = priorShape[4:,:] - currentShape[0:4,:] # top of prior cube, minus bottom of current cube
+    currentShape[0:4] += diff
+    currentShape[4:] += diff
+    return currentShape
+
+# -------------------------------------------
+# Iterative transformations
+# -------------------------------------------
+
+def get3DItem(coords):
+    pc = Poly3DCollection(getCubeVerts(coords), edgecolors='black', linewidths=1)
+    pc.set_alpha(.05)
+    pc.set_facecolor('black')
+    return pc
+
+def applyTransformation(transCube):
+    transCube = rotate(transCube, alpha, beta, gamma)
+    transCube = scale(transCube, zScale)
+    return transCube
+
+def updateAxisLimits(axisLimits, coords):
+    def getMinMax(coords,dim):
+        return [np.min(coords[:,dim]), np.max(coords[:,dim])]
+    for dim in range(3):
+        curMin, curMax = getMinMax(coords,dim)
+        if curMin < axisLimits[dim][0]:
+            axisLimits[dim][0] = curMin
+        if curMax > axisLimits[dim][1]:
+            axisLimits[dim][1] = curMax
+    return axisLimits
+
+# Initialise figure
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+axisLimits = [[np.float('inf'),0] for i in range(3)] # Initialise axis min & max values for all 3 dimensions
+
+# Get initial cube element
+transCube = np.copy(cubeCoordinates)
+transCube = applyTransformation(transCube)
+transCube[0:4,:] = np.copy(cubeCoordinates)[0:4,:]
+
+# Loop over iterations
+for i in range(iterations):
+    originalShape = transCube
+    ax.add_collection3d(get3DItem(originalShape))
+    transCube = applyTransformation(transCube)
+    transCube = translate(originalShape, transCube)
+    axisLimits = updateAxisLimits(axisLimits, transCube)
+
+# Set axis limits and plot
+ax.set_xlim(axisLimits[0][0], axisLimits[0][1])
+ax.set_ylim(axisLimits[1][0], axisLimits[1][1])
+ax.set_zlim(axisLimits[2][0], axisLimits[2][1])
+plt.axis('off')
+
+# Animation function
+def animate(i):
+    ax.view_init(elev=20., azim=i*2)
+    return ax
+
+# Animate
+anim = animation.FuncAnimation(fig, animate, interval=1)
+plt.show()
