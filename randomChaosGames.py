@@ -32,25 +32,6 @@ class Mobius():
         z2 = (self.a*z + self.b) / (self.c*z + self.d) 
         return z2.real, z2.imag
 
-transformation = Mobius() #np.meshgrid
-x = np.arange(start=1, stop=11, step=1)
-y = x
-for curX in x:
-    for curY in y:
-        plt.subplot(1,2,1)
-        plt.scatter(curX, curY)
-        transX, transY = transformation.transform(curX,curY)
-        plt.subplot(1,2,2)
-        plt.scatter(transX, transY)        
-
-plt.show()
-
-
-asjkld
-
-
-
-
 
 # ----------------------------------------------
 # Use Iterated Function System to iteratively produce images
