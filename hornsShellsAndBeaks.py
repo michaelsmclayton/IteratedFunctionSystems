@@ -10,7 +10,7 @@ from matplotlib import animation
 from scipy.spatial.transform import Rotation as R
 
 # Transformation parameters
-organismChoice = 'GreaterKudu'
+organismChoice = 'Markhor'
 parameterChoices = {
     'GreaterKudu': {'alpha': 7, 'beta': 7, 'gamma': 0, 'zScale': .96, 'parameters': 48},
     'WildGoat': {'alpha': 2, 'beta': 16, 'gamma': 0, 'zScale': .85, 'parameters': 8},
@@ -36,14 +36,18 @@ cubeCoordinates = [ \
     [1, 1, 1], # far top right
     [0, 1, 1]] # far top left
 
-def getCubeVerts(coords):
-    return \
-        [[coords[0], coords[1], coords[2], coords[3]], 
-        [coords[4], coords[5], coords[6], coords[7]], 
-        [coords[0], coords[1], coords[5], coords[4]], 
+def getCubeVerts(coords, removeTopAndBottom=True):
+    verts = [ \
+        [coords[0], coords[1], coords[2], coords[3]],
+        [coords[4], coords[5], coords[6], coords[7]],
+        [coords[0], coords[1], coords[5], coords[4]],  
         [coords[2], coords[3], coords[7], coords[6]], 
         [coords[1], coords[2], coords[6], coords[5]],
         [coords[4], coords[7], coords[3], coords[0]]]
+    if removeTopAndBottom==True:
+        return verts[2:]
+    else:
+        return verts
 
 
 # -------------------------------------------
@@ -69,8 +73,8 @@ def translate(priorShape, currentShape):
 # -------------------------------------------
 
 def get3DItem(coords):
-    pc = Poly3DCollection(getCubeVerts(coords), edgecolors='black', linewidths=1)
-    pc.set_alpha(.05)
+    pc = Poly3DCollection(getCubeVerts(coords), edgecolors='black', linewidths=0.1)
+    pc.set_alpha(.1)
     pc.set_facecolor('black')
     return pc
 
@@ -89,6 +93,7 @@ def updateAxisLimits(axisLimits, coords):
         if curMax > axisLimits[dim][1]:
             axisLimits[dim][1] = curMax
     return axisLimits
+
 
 # Initialise figure
 fig = plt.figure()
@@ -109,16 +114,23 @@ for i in range(iterations):
     axisLimits = updateAxisLimits(axisLimits, transCube)
 
 # Set axis limits and plot
-ax.set_xlim(axisLimits[0][0], axisLimits[0][1])
-ax.set_ylim(axisLimits[1][0], axisLimits[1][1])
+getAxisLimits = lambda limits : np.max(np.abs(np.subtract(limits,0))) # get greatest absolute distance from 0
+if organismChoice in ['StrombusGigas', 'ChiroceusRamosus']:
+    ax.set_xlim(axisLimits[0][0], axisLimits[0][1])
+    ax.set_ylim(axisLimits[1][0], axisLimits[1][1])
+else: # Rotate around center
+    maxXYLimit = np.max([getAxisLimits(axisLimits[0]), getAxisLimits(axisLimits[1])])
+    ax.set_xlim(-maxXYLimit, maxXYLimit)
+    ax.set_ylim(-maxXYLimit, maxXYLimit)
 ax.set_zlim(axisLimits[2][0], axisLimits[2][1])
 plt.axis('off')
 
 # Animation function
 def animate(i):
-    ax.view_init(elev=20., azim=i*2)
+    ax.view_init(elev=20., azim=i*1.5)
     return ax
 
 # Animate
-anim = animation.FuncAnimation(fig, animate, interval=1)
-plt.show()
+anim = animation.FuncAnimation(fig, animate, frames=240, interval=1)
+anim.save('%s.gif' % (organismChoice), writer='imagemagick', fps=60)
+# plt.show()
