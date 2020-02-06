@@ -5,6 +5,7 @@
 <a href="https://github.com/michaelsmclayton/IteratedFunctionSystems/blob/master/randomChaosGames.py">randomChaosGames.py</a>
 
 <img src="./randomChaosGames.png"></img>
+Eight example outputs from scripts, each showing different fractal shapes that can be generated using this method.
 
 ## IFS-based method for generating horns and seashells
 Implementation of:<br>
@@ -13,3 +14,4 @@ Implementation of:<br>
 <a href="https://github.com/michaelsmclayton/IteratedFunctionSystems/blob/master/hornsShellsAndBeaks.py">hornsShellsAndBeaks.py</a>
 
 <img src="./hornsShellsAndBeaks.gif"></img>
+Example structures generated using the parameters provided by Stępień (2009).
