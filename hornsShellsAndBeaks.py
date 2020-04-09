@@ -22,7 +22,6 @@ parameterChoices = {
     'ShortBeak': {'alpha': 0, 'beta': 7.5, 'gamma': 0, 'zScale': .8, 'parameters': 18}}
 alpha, beta, gamma, zScale, iterations = list(parameterChoices[organismChoice].values())
 
-
 # -------------------------------------------
 # Cube parameters
 # -------------------------------------------
@@ -72,10 +71,11 @@ def translate(priorShape, currentShape):
 # Iterative transformations
 # -------------------------------------------
 
-def get3DItem(coords):
-    pc = Poly3DCollection(getCubeVerts(coords), edgecolors='black', linewidths=0.1)
+def get3DItem(coords, color='black', fillColor=None):
+    if fillColor == None: fillColor = color
+    pc = Poly3DCollection(getCubeVerts(coords), edgecolors=color, linewidths=0.1)
     pc.set_alpha(.1)
-    pc.set_facecolor('black')
+    pc.set_facecolor(fillColor)
     return pc
 
 def applyTransformation(transCube):
@@ -94,43 +94,49 @@ def updateAxisLimits(axisLimits, coords):
             axisLimits[dim][1] = curMax
     return axisLimits
 
+def run():
 
-# Initialise figure
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-axisLimits = [[np.float('inf'),0] for i in range(3)] # Initialise axis min & max values for all 3 dimensions
+    # Initialise figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_facecolor((1,1,1))
+    axisLimits = [[np.float('inf'),0] for i in range(3)] # Initialise axis min & max values for all 3 dimensions
 
-# Get initial cube element
-transCube = np.copy(cubeCoordinates)
-transCube = applyTransformation(transCube)
-transCube[0:4,:] = np.copy(cubeCoordinates)[0:4,:]
-
-# Loop over iterations
-for i in range(iterations):
-    originalShape = transCube
-    ax.add_collection3d(get3DItem(originalShape))
+    # Get initial cube element
+    transCube = np.copy(cubeCoordinates)
     transCube = applyTransformation(transCube)
-    transCube = translate(originalShape, transCube)
-    axisLimits = updateAxisLimits(axisLimits, transCube)
+    transCube[0:4,:] = np.copy(cubeCoordinates)[0:4,:]
 
-# Set axis limits and plot
-getAxisLimits = lambda limits : np.max(np.abs(np.subtract(limits,0))) # get greatest absolute distance from 0
-if organismChoice in ['StrombusGigas', 'ChiroceusRamosus']:
-    ax.set_xlim(axisLimits[0][0], axisLimits[0][1])
-    ax.set_ylim(axisLimits[1][0], axisLimits[1][1])
-else: # Rotate around center
-    maxXYLimit = np.max([getAxisLimits(axisLimits[0]), getAxisLimits(axisLimits[1])])
-    ax.set_xlim(-maxXYLimit, maxXYLimit)
-    ax.set_ylim(-maxXYLimit, maxXYLimit)
-ax.set_zlim(axisLimits[2][0], axisLimits[2][1])
-plt.axis('off')
+    # Loop over iterations
+    for i in range(iterations):
+        originalShape = transCube
+        ax.add_collection3d(get3DItem(originalShape))
+        transCube = applyTransformation(transCube)
+        transCube = translate(originalShape, transCube)
+        axisLimits = updateAxisLimits(axisLimits, transCube)
 
-# Animation function
-def animate(i):
-    ax.view_init(elev=20., azim=i*1.5)
-    return ax
+    # Set axis limits and plot
+    getAxisLimits = lambda limits : np.max(np.abs(np.subtract(limits,0))) # get greatest absolute distance from 0
+    if organismChoice in ['StrombusGigas', 'ChiroceusRamosus']:
+        ax.set_xlim(axisLimits[0][0], axisLimits[0][1])
+        ax.set_ylim(axisLimits[1][0], axisLimits[1][1])
+    else: # Rotate around center
+        maxXYLimit = np.max([getAxisLimits(axisLimits[0]), getAxisLimits(axisLimits[1])])
+        ax.set_xlim(-maxXYLimit, maxXYLimit)
+        ax.set_ylim(-maxXYLimit, maxXYLimit)
+    ax.set_zlim(axisLimits[2][0], axisLimits[2][1])
+    plt.axis('off')
 
-# Animate
-anim = animation.FuncAnimation(fig, animate, frames=240, interval=1)
-anim.save('%s.gif' % (organismChoice), writer='imagemagick', fps=60)
-# plt.show()
+    # Animation function
+    rotationSpeed = 3
+    def animate(i):
+        ax.view_init(elev=0, azim=i*rotationSpeed)
+        return ax
+
+    # Animate
+    anim = animation.FuncAnimation(fig, animate, interval=1, frames=10000)#int(360/rotationSpeed),)
+    # anim.save('%s.gif' % (organismChoice), writer='imagemagick', fps=60)
+    plt.show()
+
+if __name__ == "__main__":
+    run()
